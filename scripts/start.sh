@@ -78,11 +78,12 @@ if ! ls "$DATA_DIR/plugins"/PlugManX*.jar >/dev/null 2>&1 && ! ls "$DATA_DIR/plu
 fi
 
 # ---------------------------------------------------------------------
-# 4) Start panel (background) — listens on Railway $PORT
+# 4) Start panel (background) on PANEL_PORT (default 8080)
+#    Never uses 25565 — that belongs to Paper.
 # ---------------------------------------------------------------------
-export PORT="${PORT:-3000}"
-echo "[boot] Starting panel on port $PORT ..."
-( cd /app/panel && node server.cjs ) &
+export PANEL_PORT="${PANEL_PORT:-8080}"
+echo "[boot] Starting panel on port $PANEL_PORT ..."
+( cd /app/panel && PORT="$PANEL_PORT" node server.cjs ) &
 PANEL_PID=$!
 
 # ---------------------------------------------------------------------

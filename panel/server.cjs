@@ -13,7 +13,12 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 
 // Config
-const PORT = parseInt(process.env.PORT, 10) || 3000;
+// Panel must NEVER use 25565 (that's Minecraft's port). If $PORT is 25565,
+// fall back to PANEL_PORT or 8080 to avoid conflict with the MC server.
+const RAW_PORT = parseInt(process.env.PORT, 10);
+const PANEL_PORT = parseInt(process.env.PANEL_PORT, 10);
+const PORT = (RAW_PORT && RAW_PORT !== 25565) ? RAW_PORT
+            : (PANEL_PORT || 8080);
 const USERNAME = process.env.PANEL_USERNAME || process.env.FILE_MANAGER_USERNAME || 'admin';
 const PASSWORD = process.env.PANEL_PASSWORD || process.env.FILE_MANAGER_PASSWORD || 'adminadmin123';
 const RCON_HOST = process.env.RCON_HOST || '127.0.0.1';

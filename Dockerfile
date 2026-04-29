@@ -50,9 +50,10 @@ ENV DATA_DIR=/data \
     PANEL_PASSWORD=adminadmin123 \
     EULA=TRUE
 
-# Railway provides PORT for HTTP (panel). Minecraft uses 25565 (TCP proxy).
+# Railway: set the public domain target port to 8080 (panel).
+# Minecraft uses 25565 (expose via TCP Proxy in Railway networking settings).
 EXPOSE 25565
-EXPOSE 3000
+EXPOSE 8080
 
 ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
 CMD ["/app/scripts/start.sh"]
