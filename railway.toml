@@ -1,0 +1,19 @@
+# Railway deployment config
+# Single service: Paper 1.21 + web panel, sharing /data volume.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Restart Paper if it crashes
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+# Give Paper time to save world on shutdown
+healthcheckTimeout = 60
+
+# Persistent volume — REQUIRED so the world survives redeploys.
+# After first deploy, attach a volume in the Railway UI mounted at /data.
+[[deploy.volumes]]
+mountPath = "/data"
+name = "minecraft-data"

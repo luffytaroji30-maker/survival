@@ -1,0 +1,74 @@
+config-version: 12
+settings:
+  debug: false
+  save-user-cache-on-stop-only: true
+  bungeecord: false
+  player-shuffle: 0
+  user-cache-size: 1000
+  moved-too-quickly-multiplier: 10.0
+  moved-wrongly-threshold: 0.0625
+  timeout-time: 60
+  restart-on-crash: true
+  restart-script: ./start.sh
+  netty-threads: 4
+world-settings:
+  default:
+    verbose: false
+    mob-spawn-range: 6
+    entity-activation-range:
+      animals: 24
+      monsters: 24
+      raiders: 48
+      misc: 8
+      water: 12
+      villagers: 24
+      flying-monsters: 32
+      tick-inactive-villagers: false
+      ignore-spectators: true
+    entity-tracking-range:
+      players: 48
+      animals: 48
+      monsters: 48
+      misc: 32
+      other: 64
+    merge-radius:
+      item: 3.5
+      exp: 4.0
+    arrow-despawn-rate: 600
+    item-despawn-rate: 6000
+    nerf-spawner-mobs: false
+    growth:
+      cactus-modifier: 100
+      cane-modifier: 100
+      melon-modifier: 100
+      mushroom-modifier: 100
+      pumpkin-modifier: 100
+      sapling-modifier: 100
+      beetroot-modifier: 100
+      carrot-modifier: 100
+      potato-modifier: 100
+      wheat-modifier: 100
+      netherwart-modifier: 100
+      vine-modifier: 100
+      cocoa-modifier: 100
+      bamboo-modifier: 100
+      sweetberry-modifier: 100
+      kelp-modifier: 100
+      twistingvines-modifier: 100
+      weepingvines-modifier: 100
+      cavevines-modifier: 100
+      glowberry-modifier: 100
+    hunger:
+      jump-walk-exhaustion: 0.05
+      jump-sprint-exhaustion: 0.2
+      combat-exhaustion: 0.1
+      regen-exhaustion: 6.0
+      swim-multiplier: 0.01
+      sprint-multiplier: 0.1
+      other-multiplier: 0.0
+    max-tnt-per-tick: 100
+    max-tick-time:
+      tile: 50
+      entity: 50
+    item-merge-radius: 2.5
+    exp-merge-radius: 3.0

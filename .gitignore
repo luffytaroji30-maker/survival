@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.vite/
+.cache/
+.DS_Store
+*.log
+
+# Local Minecraft test data (don't push worlds to git)
+data/
+panel/.env
+panel/.env.local

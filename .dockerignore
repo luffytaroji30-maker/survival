@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/.vite
+**/.cache
+**/.DS_Store
+.git
+.gitignore
+README.md
+panel/.env
+panel/.env.*
+*.log
