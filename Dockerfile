@@ -41,8 +41,7 @@ COPY --from=panel-builder /panel/dist ./panel/dist
 COPY scripts/ /app/scripts/
 RUN chmod +x /app/scripts/*.sh
 
-# Persistent volume mount target (Railway volume goes here)
-VOLUME ["/data"]
+# Persistent data directory (mount a Railway Volume here at /data)
 ENV DATA_DIR=/data \
     MC_VERSION=1.21.10 \
     MEMORY_MB=6144 \
