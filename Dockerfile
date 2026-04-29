@@ -21,7 +21,7 @@ FROM eclipse-temurin:21-jre-jammy AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl ca-certificates jq tar gzip bzip2 unzip xz-utils bsdtar tini procps \
+        curl ca-certificates jq tar gzip bzip2 unzip xz-utils libarchive-tools tini procps \
         coreutils \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
