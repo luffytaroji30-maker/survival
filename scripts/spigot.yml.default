@@ -5,9 +5,9 @@ settings:
   bungeecord: false
   player-shuffle: 0
   user-cache-size: 1000
-  moved-too-quickly-multiplier: 10.0
-  moved-wrongly-threshold: 0.0625
-  timeout-time: 60
+  moved-too-quickly-multiplier: 25.0
+  moved-wrongly-threshold: 0.25
+  timeout-time: 300
   restart-on-crash: true
   restart-script: ./start.sh
   netty-threads: 4

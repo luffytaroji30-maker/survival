@@ -66,6 +66,24 @@ fi
 [[ -f "$DATA_DIR/config/paper-global.yml" ]] || cp /app/scripts/paper-global.yml.default "$DATA_DIR/config/paper-global.yml"
 
 # ---------------------------------------------------------------------
+# 2b) Tolerance patches for Railway's TCP proxy (idempotent — run every boot).
+#     Prevents "moved too quickly" / "keepalive out-of-order" disconnects
+#     caused by proxy-induced jitter.
+# ---------------------------------------------------------------------
+patch_yaml_value() {
+  # patch_yaml_value <file> <key> <new_value>
+  local file="$1" key="$2" val="$3"
+  [[ -f "$file" ]] || return 0
+  if grep -qE "^[[:space:]]*${key}:" "$file"; then
+    sed -i -E "s|^([[:space:]]*${key}:).*|\1 ${val}|" "$file"
+  fi
+}
+patch_yaml_value "$DATA_DIR/spigot.yml" "timeout-time"                 "300"
+patch_yaml_value "$DATA_DIR/spigot.yml" "moved-too-quickly-multiplier" "25.0"
+patch_yaml_value "$DATA_DIR/spigot.yml" "moved-wrongly-threshold"      "0.25"
+patch_yaml_value "$DATA_DIR/config/paper-global.yml" "max-packet-rate" "2000.0"
+
+# ---------------------------------------------------------------------
 # 3) Auto-install PlugManX (panel uses `plugman` for hot load/unload)
 # ---------------------------------------------------------------------
 if ! ls "$DATA_DIR/plugins"/PlugManX*.jar >/dev/null 2>&1 && ! ls "$DATA_DIR/plugins"/plugmanx*.jar >/dev/null 2>&1; then
