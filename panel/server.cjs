@@ -196,42 +196,91 @@ app.get('/api/auth/check', (req, res) => {
 // Server info
 // ===========================================================
 
+// Track when the panel (and therefore Paper) started, so uptime reflects
+// the container, not the underlying host kernel.
+const PANEL_START_MS = Date.now();
+
+function findPaperPid() {
+  // Best-effort: look for the running `java -jar paper.jar` process.
+  try {
+    const out = execSync("pgrep -f 'paper.*\\.jar' || true", { encoding: 'utf8', timeout: 2000 });
+    const pid = parseInt(out.trim().split(/\s+/)[0], 10);
+    return Number.isFinite(pid) ? pid : null;
+  } catch (_) { return null; }
+}
+
+function readPaperStats() {
+  const pid = findPaperPid();
+  if (!pid) return { running: false, memUsed: 0, memTotal: 0, uptime: 0 };
+
+  let memUsed = 0;
+  try {
+    const status = fs.readFileSync(`/proc/${pid}/status`, 'utf8');
+    const m = status.match(/VmRSS:\s+(\d+)/);
+    if (m) memUsed = parseInt(m[1], 10) * 1024;
+  } catch (_) {}
+
+  let uptime = 0;
+  try {
+    const stat = fs.statSync(`/proc/${pid}`);
+    uptime = Math.floor((Date.now() - stat.ctimeMs) / 1000);
+  } catch (_) {}
+
+  return { running: true, memUsed, uptime };
+}
+
+function readMemoryLimit() {
+  // Use cgroup memory limit (container's actual cap), not host RAM.
+  // Try cgroup v2 first, then v1.
+  try {
+    const v2 = fs.readFileSync('/sys/fs/cgroup/memory.max', 'utf8').trim();
+    if (v2 && v2 !== 'max') {
+      const n = parseInt(v2, 10);
+      if (Number.isFinite(n) && n > 0 && n < 1e15) return n;
+    }
+  } catch (_) {}
+  try {
+    const v1 = fs.readFileSync('/sys/fs/cgroup/memory/memory.limit_in_bytes', 'utf8').trim();
+    const n = parseInt(v1, 10);
+    if (Number.isFinite(n) && n > 0 && n < 1e15) return n;
+  } catch (_) {}
+  // Fallback: configured Paper heap (MEMORY_MB env var)
+  const heap = parseInt(process.env.MEMORY_MB, 10);
+  if (Number.isFinite(heap) && heap > 0) return heap * 1024 * 1024;
+  return 0;
+}
+
 app.get('/api/info', auth, async (req, res) => {
   try {
-    const r = await getRcon();
+    const r = await getRcon().catch(() => null);
     let tps = 'N/A', playerCount = 0, maxPlayers = 20;
 
-    try {
-      const tpsResp = await r.command('tps');
-      const m = tpsResp.match(/[\d.]+/);
-      if (m) tps = m[0];
-    } catch (_) {}
+    if (r) {
+      try {
+        const tpsResp = await r.command('tps');
+        const m = tpsResp.match(/[\d.]+/);
+        if (m) tps = m[0];
+      } catch (_) {}
 
-    try {
-      const list = await getOnlineListCached();
-      playerCount = list.names.length;
-      maxPlayers = list.maxPlayers;
-    } catch (_) {}
+      try {
+        const list = await getOnlineListCached();
+        playerCount = list.names.length;
+        maxPlayers = list.maxPlayers;
+      } catch (_) {}
+    }
 
-    let memUsed = 0, memTotal = 0;
-    try {
-      const info = fs.readFileSync('/proc/meminfo', 'utf8');
-      const t = info.match(/MemTotal:\s+(\d+)/);
-      const a = info.match(/MemAvailable:\s+(\d+)/);
-      if (t) memTotal = parseInt(t[1]) * 1024;
-      if (a) memUsed = memTotal - parseInt(a[1]) * 1024;
-    } catch (_) {}
+    // Paper process: real RSS + child uptime (not host)
+    const paper = readPaperStats();
+    const memUsed = paper.memUsed;
+    const memTotal = readMemoryLimit();
+
+    // Uptime: prefer Paper process uptime; fall back to panel uptime
+    const uptime = paper.uptime || Math.floor((Date.now() - PANEL_START_MS) / 1000);
 
     let cpuLoad = 0;
     try {
       const load = fs.readFileSync('/proc/loadavg', 'utf8');
       cpuLoad = parseFloat(load.split(' ')[0]) || 0;
-    } catch (_) {}
-
-    let uptime = 0;
-    try {
-      const up = fs.readFileSync('/proc/uptime', 'utf8');
-      uptime = Math.floor(parseFloat(up.split(' ')[0]));
     } catch (_) {}
 
     let worldSize = 0;
@@ -250,9 +299,18 @@ app.get('/api/info', auth, async (req, res) => {
       }
     } catch (_) {}
 
-    res.json({ ok: true, tps, playerCount, maxPlayers, memUsed, memTotal, cpuLoad, uptime, worldSize, diskUsed, diskTotal });
+    // Server is "running" if the Paper process exists, regardless of WS state
+    const running = paper.running;
+
+    res.json({
+      ok: true,
+      running,
+      tps, playerCount, maxPlayers,
+      memUsed, memTotal, cpuLoad, uptime,
+      worldSize, diskUsed, diskTotal,
+    });
   } catch (e) {
-    res.json({ ok: true, tps: 'N/A', playerCount: 0, maxPlayers: 0, memUsed: 0, memTotal: 0, cpuLoad: 0, uptime: 0, worldSize: 0, error: e.message });
+    res.json({ ok: true, running: false, tps: 'N/A', playerCount: 0, maxPlayers: 0, memUsed: 0, memTotal: 0, cpuLoad: 0, uptime: 0, worldSize: 0, error: e.message });
   }
 });
 

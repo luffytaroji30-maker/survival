@@ -105,7 +105,9 @@ export default function ConsolePage() {
 
   const formatMem = (bytes: number) => (bytes / (1024 * 1024 * 1024)).toFixed(1);
 
-  const serverRunning = connected && info?.tps !== 'N/A';
+  // Server status comes from the API (Paper process check), not the WebSocket.
+  // The WS only powers the live log stream, so it shouldn't gate the badge.
+  const serverRunning = info?.running ?? (info?.tps !== undefined && info.tps !== 'N/A');
 
   return (
     <PanelLayout

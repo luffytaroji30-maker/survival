@@ -46,7 +46,7 @@ export const api = {
   // Server info
   getInfo: () =>
     request<{
-      ok: boolean; tps: string; playerCount: number; maxPlayers: number;
+      ok: boolean; running?: boolean; tps: string; playerCount: number; maxPlayers: number;
       memUsed: number; memTotal: number; cpuLoad: number; uptime: number;
       worldSize: number; diskUsed: number; diskTotal: number;
     }>('/info'),
