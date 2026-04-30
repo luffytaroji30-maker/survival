@@ -84,6 +84,27 @@ patch_yaml_value "$DATA_DIR/spigot.yml" "moved-wrongly-threshold"      "0.25"
 patch_yaml_value "$DATA_DIR/config/paper-global.yml" "max-packet-rate" "2000.0"
 
 # ---------------------------------------------------------------------
+# 2c) Honour ONLINE_MODE env var (set to 'false' to allow cracked / TLauncher).
+#     Applied every boot — idempotent.
+# ---------------------------------------------------------------------
+patch_props_value() {
+  # patch_props_value <file> <key> <value>
+  local file="$1" key="$2" val="$3"
+  [[ -f "$file" ]] || return 0
+  if grep -qE "^${key}=" "$file"; then
+    sed -i -E "s|^${key}=.*|${key}=${val}|" "$file"
+  else
+    echo "${key}=${val}" >> "$file"
+  fi
+}
+ONLINE_MODE="${ONLINE_MODE:-false}"
+patch_props_value "$DATA_DIR/server.properties" "online-mode"             "$ONLINE_MODE"
+patch_props_value "$DATA_DIR/server.properties" "enforce-secure-profile"  "false"
+if [[ "$ONLINE_MODE" == "false" ]]; then
+  echo "[boot] Offline mode ENABLED — cracked / TLauncher clients allowed."
+fi
+
+# ---------------------------------------------------------------------
 # 3) Auto-install PlugManX (panel uses `plugman` for hot load/unload)
 # ---------------------------------------------------------------------
 if ! ls "$DATA_DIR/plugins"/PlugManX*.jar >/dev/null 2>&1 && ! ls "$DATA_DIR/plugins"/plugmanx*.jar >/dev/null 2>&1; then
