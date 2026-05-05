@@ -100,6 +100,9 @@ patch_props_value() {
 ONLINE_MODE="${ONLINE_MODE:-false}"
 patch_props_value "$DATA_DIR/server.properties" "online-mode"             "$ONLINE_MODE"
 patch_props_value "$DATA_DIR/server.properties" "enforce-secure-profile"  "false"
+# Distance tuning (env-overridable). Lower = much smoother for 2-4 players.
+patch_props_value "$DATA_DIR/server.properties" "view-distance"           "${VIEW_DISTANCE:-6}"
+patch_props_value "$DATA_DIR/server.properties" "simulation-distance"     "${SIMULATION_DISTANCE:-4}"
 if [[ "$ONLINE_MODE" == "false" ]]; then
   echo "[boot] Offline mode ENABLED — cracked / TLauncher clients allowed."
 fi
@@ -133,27 +136,19 @@ cd "$DATA_DIR"
 JVM_FLAGS=(
   "-Xms${MEMORY_MB}M"
   "-Xmx${MEMORY_MB}M"
-  -XX:+UseG1GC
-  -XX:+ParallelRefProcEnabled
-  -XX:MaxGCPauseMillis=200
+  # Generational ZGC — sub-millisecond GC pauses on Java 21 (replaces G1).
+  # Eliminates the freeze spikes that cause keepalive timeouts.
+  -XX:+UseZGC
+  -XX:+ZGenerational
+  -XX:+AlwaysPreTouch
+  -XX:+UseTransparentHugePages
   -XX:+UnlockExperimentalVMOptions
   -XX:+DisableExplicitGC
-  -XX:+AlwaysPreTouch
-  -XX:G1NewSizePercent=30
-  -XX:G1MaxNewSizePercent=40
-  -XX:G1HeapRegionSize=8M
-  -XX:G1ReservePercent=20
-  -XX:G1HeapWastePercent=5
-  -XX:G1MixedGCCountTarget=4
-  -XX:InitiatingHeapOccupancyPercent=15
-  -XX:G1MixedGCLiveThresholdPercent=90
-  -XX:G1RSetUpdatingPauseTimePercent=5
-  -XX:SurvivorRatio=32
+  -XX:-OmitStackTraceInFastThrow
   -XX:+PerfDisableSharedMem
-  -XX:MaxTenuringThreshold=1
-  -Dusing.aikars.flags=https://mcflags.emc.gs
-  -Daikars.new.flags=true
   -Dfile.encoding=UTF-8
+  # Don't choke chunk-generation threads
+  -Dpaper.playerconnection.keepalive=120
 )
 
 # Trap signals to gracefully shut down both processes (preserves world data)

@@ -200,6 +200,9 @@ app.get('/api/auth/check', (req, res) => {
 // the container, not the underlying host kernel.
 const PANEL_START_MS = Date.now();
 
+// Cache for expensive disk scans (refreshed in background)
+const diskCache = { ts: 0, worldSize: 0, diskUsed: 0, diskTotal: 0 };
+
 function findPaperPid() {
   // Best-effort: look for the running `java -jar paper.jar` process.
   try {
@@ -283,21 +286,29 @@ app.get('/api/info', auth, async (req, res) => {
       cpuLoad = parseFloat(load.split(' ')[0]) || 0;
     } catch (_) {}
 
-    let worldSize = 0;
-    try {
-      const out = execSync(`du -sb ${DATA_DIR} 2>/dev/null | cut -f1`, { encoding: 'utf8', timeout: 5000 });
-      worldSize = parseInt(out.trim()) || 0;
-    } catch (_) {}
-
-    let diskUsed = 0, diskTotal = 0;
-    try {
-      const df = execSync(`df -B1 /data 2>/dev/null | tail -1`, { encoding: 'utf8', timeout: 5000 });
-      const parts = df.trim().split(/\s+/);
-      if (parts.length >= 4) {
-        diskTotal = parseInt(parts[1]) || 0;
-        diskUsed = parseInt(parts[2]) || 0;
-      }
-    } catch (_) {}
+    // Cache disk-usage scans — `du -sb /data` walks the whole world and can
+    // block the event loop for seconds on large saves. Refresh every 5 min.
+    let worldSize = diskCache.worldSize;
+    let diskUsed = diskCache.diskUsed;
+    let diskTotal = diskCache.diskTotal;
+    if (Date.now() - diskCache.ts > 5 * 60 * 1000) {
+      diskCache.ts = Date.now();
+      // Run async so we never block /api/info
+      setImmediate(() => {
+        try {
+          const out = execSync(`du -sb ${DATA_DIR} 2>/dev/null | cut -f1`, { encoding: 'utf8', timeout: 30000 });
+          diskCache.worldSize = parseInt(out.trim()) || diskCache.worldSize;
+        } catch (_) {}
+        try {
+          const df = execSync(`df -B1 /data 2>/dev/null | tail -1`, { encoding: 'utf8', timeout: 5000 });
+          const parts = df.trim().split(/\s+/);
+          if (parts.length >= 4) {
+            diskCache.diskTotal = parseInt(parts[1]) || diskCache.diskTotal;
+            diskCache.diskUsed  = parseInt(parts[2]) || diskCache.diskUsed;
+          }
+        } catch (_) {}
+      });
+    }
 
     // Server is "running" if the Paper process exists, regardless of WS state
     const running = paper.running;
