@@ -44,7 +44,7 @@ RUN chmod +x /app/scripts/*.sh
 # Persistent data directory (mount a Railway Volume here at /data)
 ENV DATA_DIR=/data \
     MC_VERSION=1.21.10 \
-    MEMORY_MB=6144 \
+    MEMORY_MB=8192 \
     RCON_PASSWORD=HellC0re_Rc0n2026! \
     PANEL_USERNAME=admin \
     PANEL_PASSWORD=adminadmin123 \
